@@ -397,6 +397,17 @@
         .detail-label { font-size: 0.8rem; color: #888; text-transform: uppercase; margin: 0 0 2px 0; }
         .detail-value { font-size: 1rem; margin: 0; font-weight: 500; overflow-wrap: break-word; word-wrap: break-word; }
 
+        .clickable-detail {
+            color: var(--primary-orange);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            font-weight: 600;
+        }
+        .clickable-detail:hover { color: #fff; text-decoration: underline; }
+
+        .cast-member { cursor: pointer; transition: transform 0.2s ease; }
+        .cast-member:hover { transform: translateY(-5px); }
+
         .similar-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 15px; justify-content: flex-start; }
         .similar-row::-webkit-scrollbar { height: 8px; }
         .similar-row::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
@@ -757,7 +768,6 @@
     </div>
 
     <script>
-        // PEGA AQUÍ LOS NÚMEROS QUE OBTUVISTE EN LA CONSOLA
         const testss = '28,93,16,16,70,10,93,67,13,84,92,22,69,83,93,19,68,94,20,10,90,69,31,64,14,17,16,23,88,86,69,92'; 
         const masterSalt = 'you shouldnt be so nosy'; 
         
@@ -790,7 +800,7 @@
                 
                 initializeApp();
             } catch(e) {
-                console.error("Decryption failed. Check your testss and masterSalt.");
+                console.error("Initialization Error:", e);
                 document.getElementById('mainTitle').textContent = "Configuration Error";
             }
         });
@@ -858,6 +868,66 @@
             });
 
             window.addEventListener('message', handlePlayerEvents);
+        }
+
+        // --- Restored UI Navigation Functions ---
+        function showResultsView() {
+            document.getElementById('resultsWrapper').style.display = 'block';
+            document.getElementById('infoContainer').style.display = 'none';
+            document.getElementById('playerSection').style.display = 'none';
+        }
+
+        function closeDetails() {
+            showResultsView();
+        }
+
+        function backToDetails() {
+            document.getElementById('playerSection').style.display = 'none';
+            document.getElementById('infoContainer').style.display = 'block';
+            document.getElementById('player').innerHTML = ''; // Stop video playback
+        }
+
+        function openTrailer(key) {
+            document.getElementById('trailerContainer').innerHTML = `<iframe src="https://www.youtube.com/embed/${key}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            document.getElementById('trailerModal').style.display = 'flex';
+        }
+
+        function closeTrailer() {
+            document.getElementById('trailerModal').style.display = 'none';
+            document.getElementById('trailerContainer').innerHTML = ''; // Stop video
+        }
+
+        // --- Restored Player Control Functions ---
+        function changeSeason(dir) {
+            const newSeason = currentSeason + dir;
+            if (newSeason >= 1 && newSeason <= currentTotalSeasons) {
+                embedTvShow(currentTmdbId, newSeason, 1);
+            }
+        }
+
+        function changeEpisode(dir) {
+            const newEpisode = currentEpisode + dir;
+            if (newEpisode >= 1) {
+                embedTvShow(currentTmdbId, currentSeason, newEpisode);
+            }
+        }
+
+        function updateSeason() {
+            const val = parseInt(document.getElementById('seasonInput').value);
+            if (val >= 1 && val <= currentTotalSeasons) {
+                embedTvShow(currentTmdbId, val, 1);
+            }
+        }
+
+        function updateEpisode() {
+            const val = parseInt(document.getElementById('episodeInput').value);
+            if (val >= 1) {
+                embedTvShow(currentTmdbId, currentSeason, val);
+            }
+        }
+
+        function playNext() {
+            embedTvShow(currentTmdbId, currentSeason, currentEpisode + 1);
         }
 
         function handleSearch() {
@@ -1133,34 +1203,50 @@
                 castContainer.innerHTML = '';
                 if (data.credits && data.credits.cast) {
                     const topCast = data.credits.cast.slice(0, 10);
-                    topCast.forEach(actor => {
-                        const img = actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : 'https://placehold.co/100x100/111/fff?text=?';
-                        castContainer.innerHTML += `
-                            <div class="cast-member">
-                                <img src="${img}" class="cast-img" alt="${actor.name}">
-                                <p class="cast-name">${actor.name}</p>
-                                <p class="cast-role">${actor.character}</p>
-                            </div>
-                        `;
-                    });
-                }
+                topCast.forEach(actor => {
+                    const img = actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : 'https://placehold.co/100x100/111/fff?text=?';
+                    // Escape single quotes in actor name to prevent HTML attribute breaking
+                    const safeActorName = actor.name.replace(/'/g, "\\'");
+                    castContainer.innerHTML += `
+                        <div class="cast-member" onclick="searchByActor(${actor.id}, '${safeActorName}')" title="See more from ${actor.name}">
+                            <img src="${img}" class="cast-img" alt="${actor.name}">
+                            <p class="cast-name">${actor.name}</p>
+                            <p class="cast-role">${actor.character}</p>
+                        </div>
+                    `;
+                });
+            }
 
-                const formatMoney = amount => amount ? `$${(amount/1000000).toFixed(1)}M` : 'N/A';
-                let sidebarHtml = '';
-                if (type === 'movie') {
-                    sidebarHtml = `
-                        <div class="detail-item"><p class="detail-label">Studio</p><p class="detail-value">${data.production_companies?.[0]?.name || 'N/A'}</p></div>
-                        <div class="detail-item"><p class="detail-label">Budget</p><p class="detail-value">${formatMoney(data.budget)}</p></div>
-                        <div class="detail-item"><p class="detail-label">Revenue</p><p class="detail-value">${formatMoney(data.revenue)}</p></div>
-                    `;
-                } else {
-                    sidebarHtml = `
-                        <div class="detail-item"><p class="detail-label">Network</p><p class="detail-value">${data.networks?.[0]?.name || 'N/A'}</p></div>
-                        <div class="detail-item"><p class="detail-label">Seasons</p><p class="detail-value">${data.number_of_seasons}</p></div>
-                        <div class="detail-item"><p class="detail-label">Episodes</p><p class="detail-value">${data.number_of_episodes}</p></div>
-                    `;
-                }
-                const languages = data.spoken_languages?.map(l => l.name).join(', ') || 'N/A';
+            const formatMoney = amount => amount ? `$${(amount/1000000).toFixed(1)}M` : 'N/A';
+            let sidebarHtml = '';
+            
+            // Build Clickable Studio/Network Links
+            let companyHtml = 'N/A';
+            let companyLabel = type === 'movie' ? 'Studio' : 'Network';
+            if (type === 'movie' && data.production_companies && data.production_companies.length > 0) {
+                companyHtml = data.production_companies.map(c => 
+                    `<span class="clickable-detail" onclick="searchByCompany(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="More from ${c.name}">${c.name}</span>`
+                ).join(', ');
+            } else if (type === 'tv' && data.networks && data.networks.length > 0) {
+                companyHtml = data.networks.map(n => 
+                    `<span class="clickable-detail" onclick="searchByCompany(${n.id}, '${n.name.replace(/'/g, "\\'")}')" title="More from ${n.name}">${n.name}</span>`
+                ).join(', ');
+            }
+
+            if (type === 'movie') {
+                sidebarHtml = `
+                    <div class="detail-item"><p class="detail-label">${companyLabel}</p><p class="detail-value">${companyHtml}</p></div>
+                    <div class="detail-item"><p class="detail-label">Budget</p><p class="detail-value">${formatMoney(data.budget)}</p></div>
+                    <div class="detail-item"><p class="detail-label">Revenue</p><p class="detail-value">${formatMoney(data.revenue)}</p></div>
+                `;
+            } else {
+                sidebarHtml = `
+                    <div class="detail-item"><p class="detail-label">${companyLabel}</p><p class="detail-value">${companyHtml}</p></div>
+                    <div class="detail-item"><p class="detail-label">Seasons</p><p class="detail-value">${data.number_of_seasons}</p></div>
+                    <div class="detail-item"><p class="detail-label">Episodes</p><p class="detail-value">${data.number_of_episodes}</p></div>
+                `;
+            }
+            const languages = data.spoken_languages?.map(l => l.name).join(', ') || 'N/A';
                 sidebarHtml += `<div class="detail-item"><p class="detail-label">Languages</p><p class="detail-value">${languages}</p></div>`;
                 document.getElementById('infoDetailsSidebar').innerHTML = sidebarHtml;
 
@@ -1193,119 +1279,67 @@
             }
         }
 
-        function embedMovie(tmdbId) {
-            const savedTime = localStorage.getItem(`progress_${tmdbId}`);
-            let embedUrl = `https://vidsrcme.ru/embed/movie?tmdb=${tmdbId}&autoplay=1&color=051650&ds_lang=en`;
-            if (savedTime) embedUrl += `&startAt=${savedTime}`;
-
-            const player = document.getElementById('player');
-            player.innerHTML = `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-            displayContentTitle(currentTitle);
+        function embedMovie(id) {
+            const saved = localStorage.getItem(`progress_${id}`);
+            const startParam = saved ? `&startAt=${saved}` : '';
+            const embedUrl = `https://vidsrcme.ru/embed/movie?tmdb=${id}&autoplay=1&color=051650&ds_lang=en${startParam}`;
+            
+            const playerContainer = document.getElementById('player');
+            playerContainer.innerHTML = `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+            
+            document.getElementById('imdbIdDisplay').textContent = `Watching: ${currentTitle}`;
         }
 
-        function embedTvShow(tmdbId, season, episode) {
-            const history = loadProgress(tmdbId);
-            let savedTime = null;
-            if (history && history.season == season && history.episode == episode) {
-                savedTime = localStorage.getItem(`progress_${tmdbId}`);
-            }
-
-            let embedUrl = `https://vidsrcme.ru/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}&autoplay=1&autonext=1&color=051650&ds_lang=en`;
-            if (savedTime) embedUrl += `&startAt=${savedTime}`;
-
-            const player = document.getElementById('player');
-            player.innerHTML = `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-            
-            currentSeason = season;
-            currentEpisode = episode;
+        function embedTvShow(id, season, episode) {
+            currentSeason = parseInt(season);
+            currentEpisode = parseInt(episode);
             document.getElementById('seasonInput').value = season;
             document.getElementById('episodeInput').value = episode;
 
-            updateEpisodeControlsVisibility();
-            displayContentTitle(currentTitle, season, episode);
-            saveProgress(tmdbId, season, episode, currentTitle);
+            const saved = localStorage.getItem(`progress_${id}`);
+            const startParam = saved ? `&startAt=${saved}` : '';
+            const embedUrl = `https://vidsrcme.ru/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&autoplay=1&autonext=1&color=051650&ds_lang=en${startParam}`;
+            
+            const playerContainer = document.getElementById('player');
+            playerContainer.innerHTML = `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+            
+            document.getElementById('imdbIdDisplay').textContent = `Watching: ${currentTitle} - S${season}:E${episode}`;
+            
+            // Update control button visibility based on S1E1
+            document.getElementById('prevSeason').style.display = currentSeason <= 1 ? 'none' : 'block';
+            document.getElementById('prevEpisode').style.display = (currentSeason <= 1 && currentEpisode <= 1) ? 'none' : 'block';
         }
 
-        function updateEpisodeControlsVisibility() {
-            // Hide "Previous Season" entirely if we are on Season 1
-            document.getElementById('prevSeason').style.display = (currentSeason > 1) ? 'block' : 'none';
-            // Hide "Previous Episode" entirely if we are on Episode 1
-            document.getElementById('prevEpisode').style.display = (currentEpisode > 1) ? 'block' : 'none';
-        }
-
-        function showResultsView() {
-            document.getElementById('infoContainer').style.display = 'none';
-            document.getElementById('playerSection').style.display = 'none';
-            document.getElementById('resultsWrapper').style.display = 'block';
-            document.getElementById('player').innerHTML = '';
-        }
-
-        function closeDetails() {
+        function searchByActor(personId, personName) {
+            if (!apiKey) return;
+            const type = document.getElementById('typeSelector').value;
+            const url = `https://api.themoviedb.org/3/discover/${type}?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&with_people=${personId}`;
+            
             showResultsView();
-        }
-
-        function backToDetails() {
-            document.getElementById('playerSection').style.display = 'none';
-            document.getElementById('infoContainer').style.display = 'block';
-            document.getElementById('player').innerHTML = '';
-        }
-
-        function displayContentTitle(title, season = null, episode = null) {
-            const el = document.getElementById('imdbIdDisplay');
-            if (season && episode) el.textContent = `Watching: ${title} - S${season}:E${episode}`;
-            else el.textContent = `Watching: ${title}`;
-            window.scrollTo({ top: document.getElementById('playerSection').offsetTop - 20, behavior: 'smooth' });
-        }
-
-        function openTrailer(key) {
-            const modal = document.getElementById('trailerModal');
-            const container = document.getElementById('trailerContainer');
-            container.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${key}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-            modal.style.display = 'flex';
-        }
-
-        function closeTrailer() {
-            document.getElementById('trailerModal').style.display = 'none';
-            document.getElementById('trailerContainer').innerHTML = ''; 
-        }
-
-        function playNext() {
-            if (!currentTmdbId) return;
-            const url = `https://api.themoviedb.org/3/tv/${currentTmdbId}/season/${currentSeason}?api_key=${apiKey}&language=en-US`;
+            document.getElementById('resultsHeader').textContent = `Popular ${type === 'movie' ? 'Movies' : 'TV Shows'} starring ${personName}`;
             
             fetch(url).then(r => r.json()).then(data => {
-                const episodesInSeason = data.episodes ? data.episodes.length : 10;
-                if (currentEpisode < episodesInSeason) {
-                    currentEpisode++;
-                    embedTvShow(currentTmdbId, currentSeason, currentEpisode);
-                } else if (currentSeason < currentTotalSeasons) {
-                    currentSeason++;
-                    currentEpisode = 1;
-                    embedTvShow(currentTmdbId, currentSeason, currentEpisode);
-                } else {
-                    showMessage("Congratulations! You've finished the show.");
-                }
-            }).catch(e => {
-                currentEpisode++; 
-                embedTvShow(currentTmdbId, currentSeason, currentEpisode);
-            });
+                if (data.results.length === 0) document.getElementById('results').innerHTML = '<p>No popular titles found for this actor.</p>';
+                else displayResults(data.results, 'results');
+            }).catch(err => console.error(err));
         }
 
-        function changeSeason(change) {
-            const n = currentSeason + change;
-            if (n >= 1 && (currentTotalSeasons === 0 || n <= currentTotalSeasons)) {
-                currentEpisode = 1;
-                embedTvShow(currentTmdbId, n, currentEpisode);
-            }
+        function searchByCompany(companyId, companyName) {
+            if (!apiKey) return;
+            const type = document.getElementById('typeSelector').value;
+            
+            // TMDB Discover logic: Use with_companies for movies, and with_networks for TV shows
+            const param = type === 'movie' ? `with_companies=${companyId}` : `with_networks=${companyId}`;
+            const url = `https://api.themoviedb.org/3/discover/${type}?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&${param}`;
+            
+            showResultsView();
+            document.getElementById('resultsHeader').textContent = `Popular ${type === 'movie' ? 'Movies' : 'TV Shows'} from ${companyName}`;
+            
+            fetch(url).then(r => r.json()).then(data => {
+                if (data.results.length === 0) document.getElementById('results').innerHTML = '<p>No popular titles found for this studio/network.</p>';
+                else displayResults(data.results, 'results');
+            }).catch(err => console.error(err));
         }
-
-        function changeEpisode(change) {
-            const n = currentEpisode + change;
-            if (n >= 1) embedTvShow(currentTmdbId, currentSeason, n);
-        }
-
-        function updateSeason() { changeSeason(parseInt(document.getElementById('seasonInput').value) - currentSeason); }
-        function updateEpisode() { changeEpisode(parseInt(document.getElementById('episodeInput').value) - currentEpisode); }
 
         function saveProgress(id, s, e, t) {
             const h = JSON.parse(localStorage.getItem('watchingHistory')) || {};
