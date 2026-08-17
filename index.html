@@ -117,16 +117,38 @@
             object-fit: cover;
         }
 
-        .top-icon-btn.mimikyu-btn {
-            background-color: #222; /* Restauramos el fondo oscuro */
-            border-color: var(--primary-blue);
+        #btnKeepWatching, #btnSaved {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
         }
 
-        .top-icon-btn.mimikyu-btn img {
+        #btnKeepWatching img, #btnSaved img {
             object-fit: contain;
-            transform: scale(1.2); /* Lo hacemos un poquito más grande para que llene bien el círculo */
-            padding: 2px;
+            transform: scale(1.4); 
             background-color: transparent;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); 
+            transition: all 0.2s ease;
+        }
+        
+        #btnSaved img {
+            border-radius: 0; /* Mimikyu totalmente libre */
+        }
+
+        #btnKeepWatching img {
+            border-radius: 50%; /* Mantiene el JPG del ojo como un círculo perfecto */
+        }
+
+        #btnKeepWatching:hover, #btnSaved:hover {
+            background-color: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        #btnKeepWatching:hover img, #btnSaved:hover img {
+            transform: scale(1.5) translateY(-2px);
+            filter: drop-shadow(0 6px 12px rgba(236, 88, 0, 0.6)); 
         }
 
         #btnAdvancedToggle {
@@ -517,7 +539,7 @@
         <button id="btnRandom">I'm bored</button>
         
         <button id="btnKeepWatching" class="top-icon-btn" title="Keep Watching">
-            <img src="kw_icon.jpg" alt="Keep Watching">
+            <img src="kw_icon.png" alt="Keep Watching">
         </button>
         <button id="btnSaved" class="top-icon-btn mimikyu-btn" title="Saved (Watchlist)">
             <img src="saved_file.png" alt="Saved">
