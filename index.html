@@ -124,10 +124,23 @@
             overflow: visible !important;
         }
 
-        #btnKeepWatching img, #btnSaved img {
+        #btnKeepWatching {
+            width: 38px !important;
+            height: 38px !important;
+            margin-left: 20px !important; /* Separación grande del botón I'm bored */
+            margin-right: 8px !important; /* Separación del Mimikyu */
+        }
+
+        #btnSaved {
+            width: 44px !important; /* Mimikyu un poquito más grande por su forma irregular */
+            height: 44px !important;
+        }
+
+        #btnKeepWatching img {
+            width: 100%;
+            height: 100%;
             object-fit: contain;
-            transform: scale(1.4); 
-            background-color: transparent;
+            border-radius: 50%;
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); 
             transition: all 0.2s ease;
         }
