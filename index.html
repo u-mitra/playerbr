@@ -132,8 +132,8 @@
         }
 
         #btnSaved {
-            width: 52px !important; /* Mimikyu un poquito más grande por su forma irregular */
-            height: 52px !important;
+            width: 56px !important; /* Mimikyu un poquito más grande por su forma irregular */
+            height: 56px !important;
         }
 
         #btnKeepWatching img {
@@ -1283,10 +1283,12 @@
                 delete s[currentTmdbId];
                 showMessage("Removed from Saved List");
                 document.getElementById('saveBtnText').textContent = "Save";
+                document.getElementById('saveIconImg').src = "add_save_wl.png";
             } else {
                 s[currentTmdbId] = { id: currentTmdbId, type: currentType, title: currentTitle, poster: currentPoster, ts: Date.now() };
                 showMessage("Added to Saved List");
                 document.getElementById('saveBtnText').textContent = "Remove";
+                document.getElementById('saveIconImg').src = "remove_save_wl.png";
             }
             localStorage.setItem('savedItemsMap', JSON.stringify(s));
         }
