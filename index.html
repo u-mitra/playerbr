@@ -111,57 +111,44 @@
             border-color: var(--primary-orange);
         }
 
-        .top-icon-btn img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         #btnKeepWatching, #btnSaved {
             background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
+            padding: 0 !important;
             overflow: visible !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #btnKeepWatching {
             width: 38px !important;
             height: 38px !important;
-            margin-left: 20px !important; /* Separación grande del botón I'm bored */
-            margin-right: 8px !important; /* Separación del Mimikyu */
+            margin-left: 20px !important;
+            margin-right: 8px !important;
         }
 
         #btnSaved {
-            width: 44px !important; /* Mimikyu un poquito más grande por su forma irregular */
-            height: 44px !important;
+            width: 56px !important;
+            height: 56px !important;
         }
 
-        #btnKeepWatching img {
+        #btnKeepWatching img, #btnSaved img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            border-radius: 50%;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); 
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
             transition: all 0.2s ease;
-        }
-        
-        #btnSaved img {
-            border-radius: 0; /* Mimikyu totalmente libre */
         }
 
         #btnKeepWatching img {
-            border-radius: 50%; /* Mantiene el JPG del ojo como un círculo perfecto */
-        }
-
-        #btnKeepWatching:hover, #btnSaved:hover {
-            background-color: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
+            border-radius: 50%;
         }
 
         #btnKeepWatching:hover img, #btnSaved:hover img {
-            transform: scale(1.5) translateY(-2px);
-            filter: drop-shadow(0 6px 12px rgba(236, 88, 0, 0.6)); 
+            transform: scale(1.15) translateY(-2px);
+            filter: drop-shadow(0 6px 12px rgba(236, 88, 0, 0.6));
         }
 
         #btnAdvancedToggle {
@@ -551,10 +538,10 @@
         </button>
         <button id="btnRandom">I'm bored</button>
         
-        <button id="btnKeepWatching" class="top-icon-btn" title="Keep Watching">
+        <button id="btnKeepWatching" title="Keep Watching">
             <img src="kw_icon.png" alt="Keep Watching">
         </button>
-        <button id="btnSaved" class="top-icon-btn mimikyu-btn" title="Saved (Watchlist)">
+        <button id="btnSaved" title="Saved (Watchlist)">
             <img src="saved_file.png" alt="Saved">
         </button>
     </div>
@@ -615,7 +602,7 @@
                     <button id="btnWatchNow" class="btn-watch">▶ Watch Now</button>
                     <button id="btnTrailer" class="btn-trailer">Trailer</button>
                     <button id="btnSaveToggle" class="btn-trailer" style="display: flex; align-items: center; gap: 8px;">
-                        <img src="mimikyu.png" style="width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));">
+                        <img id="saveIconImg" src="add_save_wl.png" style="width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));">
                         <span id="saveBtnText">Save</span>
                     </button>
                 </div>
@@ -721,7 +708,7 @@
         let apiKey = ''; 
         let currentTmdbId = '';
         let currentTitle = '';
-        let currentPoster = ''; // Used to save visually
+        let currentPoster = '';
         let currentType = 'movie';
         let currentSeason = 1;
         let currentEpisode = 1;
@@ -752,11 +739,10 @@
         });
 
         function getValidReleasedItems(items) {
-            // Compare release dates to today. If it's in the future, remove it.
             const today = new Date().toISOString().split('T')[0];
             return items.filter(item => {
                 const dateStr = item.release_date || item.first_air_date;
-                if (!dateStr) return true; // Keep it if there's no date data
+                if (!dateStr) return true; 
                 return dateStr <= today;
             });
         }
@@ -848,9 +834,8 @@
         function backToDetails() {
             document.getElementById('playerSection').style.display = 'none';
             document.getElementById('infoContainer').style.display = 'block';
-            document.getElementById('player').innerHTML = ''; // Stop video playback
+            document.getElementById('player').innerHTML = ''; 
             
-            // Re-render similar elements grid correctly in info pane
             loadSimilarContent(currentTmdbId, currentType);
         }
 
@@ -982,7 +967,6 @@
                         closeRandomizer();
                         showDetails(randomItem.id, type);
                     } else {
-                        // Fallback if the random page hit only unreleased stuff
                         const randomItem = validAvailable[Math.floor(Math.random() * validAvailable.length)];
                         closeRandomizer();
                         showDetails(randomItem.id, type);
@@ -1113,7 +1097,7 @@
                 currentType = type;
                 currentTitle = data.title || data.name;
                 currentTotalSeasons = data.number_of_seasons || 0;
-                currentPoster = data.poster_path; // Save globally for history/saved lists
+                currentPoster = data.poster_path;
 
                 document.getElementById('infoPoster').src = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : 'https://placehold.co/300x450/111/fff?text=No+Poster';
                 document.getElementById('infoTitle').textContent = currentTitle;
@@ -1161,7 +1145,6 @@
                     trailerBtn.style.display = 'none';
                 }
 
-                // Check saved status
                 const s = JSON.parse(localStorage.getItem('savedItemsMap')) || {};
                 const isSaved = !!s[currentTmdbId];
                 document.getElementById('saveBtnText').textContent = isSaved ? "Remove" : "Save";
@@ -1284,16 +1267,18 @@
 
         function toggleSaved() {
             let s = JSON.parse(localStorage.getItem('savedItemsMap')) || {};
+            const iconImg = document.getElementById('saveIconImg');
+            
             if (s[currentTmdbId]) {
                 delete s[currentTmdbId];
                 showMessage("Removed from Saved List");
                 document.getElementById('saveBtnText').textContent = "Save";
-                document.getElementById('saveIconImg').src = "add_save_wl.png";
+                if (iconImg) iconImg.src = "add_save_wl.png";
             } else {
                 s[currentTmdbId] = { id: currentTmdbId, type: currentType, title: currentTitle, poster: currentPoster, ts: Date.now() };
                 showMessage("Added to Saved List");
                 document.getElementById('saveBtnText').textContent = "Remove";
-                document.getElementById('saveIconImg').src = "remove_save_wl.png";
+                if (iconImg) iconImg.src = "remove_save_wl.png";
             }
             localStorage.setItem('savedItemsMap', JSON.stringify(s));
         }
